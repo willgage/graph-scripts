@@ -3,15 +3,17 @@
 import sys, re, optparse
 
 __doc__="""
-Provides functionality for generating a directed graph (in the form of a graphviz DOT file or yEd graphml file) 
-from a properties file with the format:
+
+Provides functionality for generating a directed graph (in the form of a graphviz DOT file or yEd graphml file) from a properties file with the format:
+
   SOURCE_NODE=ADJACENT_NODE_1,ADJACENT_NODE_2,etc
-For more information on graphviz, see http://www.graphviz.org.  
-For more information on yEd, see http://www.yworks.com/en/products/yfiles/yed/
+
+For more information on graphviz, see http://www.graphviz.org. For more information on yEd, see http://www.yworks.com/en/products/yfiles/yed/
+
 """
 
 class Node(object):
-    
+
     def __init__(self, name):
         self.color=None
         self.name=name
@@ -56,28 +58,37 @@ class AdjacencyGraph(object):
     def matchLine(self, line):
         kv = line.strip().split('=')
         vals = []
+
         if len(kv) ==0:
             return None
         elif len(kv) > 1:
             vals = kv[1].split(',')
-            
+
         return (kv[0], vals)
+
     
+
     def makeNode(self, name):
         f = filter(lambda y: y.name == name, self.nodes)
+
         if len(f) == 0:
             n = Node(name)
             return n
         else: 
             return f[0]
 
+
+
 class Font(object):
     """
     Simple font struct
     """
+
     def __init__(self, label, size):
         self.label=label
         self.size=size
+
+
 
 class GraphPrinter(object):
     """
@@ -88,26 +99,34 @@ class GraphPrinter(object):
         self.root=root
         self.suppressRoots=suppressRoots
 
+
     def printGraph(self, graph, file):
         self.printGraphHeader(file)
-        
+
         root_filter = lambda x: len(x.in_edges) == 0
+
         if self.root:
             root_filter = lambda x: x.name == self.root
-        
+
         for n in filter(root_filter, graph.nodes):
             self.printNode(n, file, self.suppressRoots)
-                
+
         self.printGraphFooter(file)
+
+
 
     def makeNodeName(self, name):
         return '%s' % (name)
+
+
+
 
 
 class GraphmlPrinter(GraphPrinter):
     """
     Print a graph in GraphML, compatible with yEd.
     """
+
     def printGraphFooter(self, file):
         file.write('</graph></graphml>');
 
@@ -122,6 +141,7 @@ class GraphmlPrinter(GraphPrinter):
         <graph id="G" edgedefault="directed">
         """
         file.write(xml_header)
+
 
     def printEdge(self, file, fromNode, toNode):
         file.write('<edge source="%s" target="%s"/>' % (fromNode, toNode))
@@ -156,7 +176,6 @@ class GraphmlPrinter(GraphPrinter):
 
 
 
-
 class DotPrinter(GraphPrinter):
     """
     Prints a directed graph in the graphviz DOT format.  There are external libraries to do this task,
@@ -168,12 +187,10 @@ class DotPrinter(GraphPrinter):
 
         self.colors={}
         self.colors['background']='white'
-
         self.fonts={}
         self.fonts['edge']=Font('Helvetica', 10)
         self.fonts['edgeLabel']=Font('Helvetica', 10)
         self.fonts['node']=Font('Helvetica', 10)
-
         self.graphName='G'
         self.rankDir='LR'
         self.rankSep=1
@@ -182,11 +199,12 @@ class DotPrinter(GraphPrinter):
         self.edgeArrowHead='normal'
         self.edgeArrowTail='none'
 
+
     def printGraphFooter(self, file):
         file.write('}\n')
 
-    def printGraphHeader(self, file):
 
+    def printGraphHeader(self, file):
         file.write('digraph %s {\n' % (self.graphName));
 
         edgeFmt=(self.fonts['edge'].label, self.fonts['edge'].size, self.fonts['edgeLabel'].label, self.fonts['edgeLabel'].size) 
@@ -197,8 +215,8 @@ class DotPrinter(GraphPrinter):
 
         graphFmt=(self.rankDir, self.rankSep, self.colors['background'])
         file.write('rankdir=%s;\nranksep=%d;\nbgcolor=%s;\n' % graphFmt)
-
                   
+
     def printNode(self, node, file, skipNode=False):
         if node.printed:
             return
@@ -221,22 +239,21 @@ class DotPrinter(GraphPrinter):
 
 
 
-
 if __name__=='__main__':
 
     usage="""usage: %prog [options] INPUT_FILE_NAME
-    Takes an input file representing a directed graph in a simple Java-style properties file, 
-    where each line represents a source node and its out-edges using the format:
-    SOURCE_NODE_ID=TARGET_NODE_ID_1,TARGET_NODE_ID_2,...,TARGET_NODE_ID_N
 
-    The program can print its output in Graphviz 'dot' format, or in GraphML format (compatible with yEd).
-    """
+Takes an input file representing a directed graph in a simple Java-style properties file, where each line represents a source node and its out-edges using the format:
+
+SOURCE_NODE_ID=TARGET_NODE_ID_1,TARGET_NODE_ID_2,...,TARGET_NODE_ID_N
+
+The program can print its output in Graphviz 'dot' format, or in GraphML format (compatible with yEd)."""
 
     op = optparse.OptionParser(usage=usage)
     op.add_option("-o", dest="output_file", default=None, help="Output file name (stdout by default)")
     op.add_option("--root", dest="root_node", default=None, help="Identifier of root node (otherwise, autodetect roots)")
     op.add_option("--suppress-roots", dest="suppress_roots", action="store_true", default=False, help="Suppress printing of root nodes")
-    op.add_option("--format", dest="format", default='dot', help="Output format,must be one of 'dot' or 'graphml'.")
+    op.add_option("--format", dest="format", default='dot', help="Output format, must be one of 'dot' or 'graphml'")
 
     (options, args) = op.parse_args()
 
@@ -250,6 +267,7 @@ if __name__=='__main__':
 
     inputFile = open(args[0], 'r')
     outputFile = sys.stdout
+
     if options.output_file:
         if options.output_file == args[0]:
             op.error("You may not specify the same file name (%s) as both input and output file." % options.output_file)
@@ -268,3 +286,4 @@ if __name__=='__main__':
     inputFile.close()
     printer.printGraph(graph, outputFile)
     outputFile.close()
+
